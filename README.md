@@ -1,0 +1,2 @@
+# Run 
+```node .\index.js```
