@@ -27,15 +27,14 @@ const Event = mongoose.model('Event', eventSchema);
 
 // Fonction pour sauvegarder les événements dans la base de données
 async function saveEventToDatabase(event) {
-    // Extracting the necessary properties from the event log
     const userOperationEvent = new Event({
-        userOpHash: event.transactionHash, // Use transactionHash as userOpHash
-        sender: event.topics[1], // Assuming the sender is in the second topic
-        paymaster: event.topics[2], // Assuming the paymaster is in the third topic
-        nonce: BigInt(event.data.slice(0, 66)), // Extract nonce from data (adjust as necessary)
-        success: true, // Set success based on your logic
-        actualGasCost: BigInt("0x" + event.data.slice(66, 130)), // Convert to BigInt with 0x prefix
-        actualGasUsed: BigInt("0x" + event.data.slice(130, 194)), // Convert to BigInt with 0x prefix
+        userOpHash: event.transactionHash,
+        sender: event.topics[1],
+        paymaster: event.topics[2],
+        nonce: BigInt(event.data.slice(0, 66)),
+        success: true,
+        actualGasCost: BigInt("0x" + event.data.slice(66, 130)),
+        actualGasUsed: BigInt("0x" + event.data.slice(130, 194)),
     });
 
     try {
@@ -46,4 +45,39 @@ async function saveEventToDatabase(event) {
     }
 }
 
-module.exports = { saveEventToDatabase }; 
+// Fonction pour requêter les événements par userOpHash
+async function getEventsByUserOpHash(userOpHash) {
+    return await Event.find({ userOpHash });
+}
+
+// Fonction pour requêter les événements par sender
+async function getEventsBySender(sender) {
+    return await Event.find({ sender });
+}
+
+// Fonction pour requêter les événements par paymaster
+async function getEventsByPaymaster(paymaster) {
+    return await Event.find({ paymaster });
+}
+
+// Fonction pour requêter les événements par plage de blocs
+async function getEventsByBlockRange(fromBlock, toBlock) {
+    return await Event.find({
+        blockNumber: { $gte: fromBlock, $lte: toBlock }
+    });
+}
+
+// Fonction pour requêter les événements par statut (success)
+async function getEventsBySuccess(success) {
+    return await Event.find({ success });
+}
+
+// Exporter les fonctions
+module.exports = {
+    saveEventToDatabase,
+    getEventsByUserOpHash,
+    getEventsBySender,
+    getEventsByPaymaster,
+    getEventsByBlockRange,
+    getEventsBySuccess
+}; 

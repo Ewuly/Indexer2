@@ -19,7 +19,7 @@ if (!MONGO_URI) {
 const { ethers } = require('ethers');
 
 // Importer la fonction de sauvegarde de la base de données
-const { saveEventToDatabase } = require('./database');
+const { saveEventToDatabase, getEventsByUserOpHash, getEventsBySender } = require('./database');
 
 const websocketUrl = "wss://arb-sepolia.g.alchemy.com/v2/gukLza792XY7s8INNeEvbGZf14YXNTzy";  // URL WebSocket Infura pour Holesky
 
@@ -115,5 +115,15 @@ async function fetchHistoricalEvents(startBlock) {
     }
 }
 
+// Exemple d'utilisation
+async function fetchEvents() {
+    const eventsByUserOpHash = await getEventsByUserOpHash('0x0f...');
+    console.log('Événements par userOpHash:', eventsByUserOpHash);
+
+    const eventsBySender = await getEventsBySender('0xabc...');
+    console.log('Événements par sender:', eventsBySender);
+}
+
 // Appel de la fonction avec un bloc de départ (par exemple, 0 pour commencer depuis le début)
-listenToEvents();
+listenToEvents(106440000);
+// fetchEvents();
