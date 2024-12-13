@@ -63,4 +63,42 @@ async function listenToEvents() {
     );
 }
 
-listenToEvents()
+// Fonction pour récupérer les événements historiques
+async function fetchHistoricalEvents(startBlock) {
+    const provider = new ethers.JsonRpcProvider(RPC_URL); // Utiliser JsonRpcProvider pour récupérer les logs
+    const filter = {
+        address: entryPointAddress,
+        topics: [userOperationEventTopic],
+    };
+
+    const latestBlock = await provider.getBlockNumber();
+    const blockRange = 2000; // Limite de 2000 blocs
+    let fromBlock = startBlock;
+
+    while (fromBlock <= latestBlock) {
+        const toBlock = Math.min(fromBlock + blockRange - 1, latestBlock); // Calculer le bloc de fin
+
+        const currentFilter = {
+            ...filter,
+            fromBlock: fromBlock,
+            toBlock: toBlock,
+        };
+
+        try {
+            const logs = await provider.getLogs(currentFilter);
+            for (const log of logs) {
+                console.log("Événement historique détecté :", log);
+                // await saveEventToDatabase(log); // Sauvegarder l'événement
+            }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des événements historiques :", error);
+        }
+
+        fromBlock += blockRange; // Passer au prochain bloc de départ
+    }
+}
+
+// Appel de la fonction avec un bloc de départ (par exemple, 0 pour commencer depuis le début)
+fetchHistoricalEvents(106430000);
+
+// listenToEvents()
