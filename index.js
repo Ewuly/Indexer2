@@ -8,8 +8,18 @@ if (!RPC_URL) {
     process.exit(1);
 }
 
+// Vérifier que MONGODB_URI est défini
+const MONGO_URI = process.env.MONGODB_URI;
+if (!MONGO_URI) {
+    console.error('Please set MONGODB_URI in the .env file');
+    process.exit(1);
+}
+
 // Importer ethers pour interagir avec Ethereum
 const { ethers } = require('ethers');
+
+// Importer la fonction de sauvegarde de la base de données
+const { saveEventToDatabase } = require('./database');
 
 const websocketUrl = "wss://arb-sepolia.g.alchemy.com/v2/gukLza792XY7s8INNeEvbGZf14YXNTzy";  // URL WebSocket Infura pour Holesky
 
@@ -36,9 +46,8 @@ class UserOperationEvent {
     }
 }
 
-// Fonction pour écouter l'événement
-async function listenToEvents() {
-    // Créer une connexion WebSocket à Ethereum
+// Fonction pour écouter les événements
+async function listenToEvents(startBlock) {
     const provider = new ethers.WebSocketProvider(websocketUrl);
 
     // Vérifier que le contrat existe sur Holesky
@@ -50,17 +59,25 @@ async function listenToEvents() {
 
     console.log("Connexion WebSocket établie, écoute des événements...");
 
-    // Créer un filtre pour écouter les événements UserOperationEvent
+    // Écouter les nouveaux événements en temps réel
     provider.on(
         {
-            address: entryPointAddress,  // Adresse du contrat
-            topics: [userOperationEventTopic],  // Topic spécifique de l'événement
+            address: entryPointAddress,
+            topics: [userOperationEventTopic],
         },
-        (log) => {
+        async (log) => {
             console.log("Événement UserOperationEvent détecté :", log);
-            // Ici, vous pouvez traiter le log, par exemple extraire les informations de l'événement
+            await saveEventToDatabase(log); // Sauvegarder l'événement
         }
     );
+
+    // Récupérer les événements historiques si un bloc de départ est spécifié
+    if (startBlock) {
+        await fetchHistoricalEvents(startBlock);
+    }
+
+    // Gérer les reconnexions en cas d'erreur
+    // ... existing error handling code ...
 }
 
 // Fonction pour récupérer les événements historiques
@@ -72,7 +89,7 @@ async function fetchHistoricalEvents(startBlock) {
     };
 
     const latestBlock = await provider.getBlockNumber();
-    const blockRange = 2000; // Limite de 2000 blocs
+    const blockRange = 10; // Limite de 10 blocs
     let fromBlock = startBlock;
 
     while (fromBlock <= latestBlock) {
@@ -99,6 +116,4 @@ async function fetchHistoricalEvents(startBlock) {
 }
 
 // Appel de la fonction avec un bloc de départ (par exemple, 0 pour commencer depuis le début)
-fetchHistoricalEvents(106430000);
-
-// listenToEvents()
+listenToEvents();
